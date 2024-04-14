@@ -18,7 +18,7 @@ class EventFactory(factory.Factory):
     goals_scored = fake.random_number(digits=2)
     minutes_played = fake.random_number(digits=2)
 
-class FootBallEventNormalizeFactory(factory.Factory):
+class FootballEventNormalizeFactory(factory.Factory):
 
     input_file = 'test_input.csv'
     output_ext = 'jsonl'
