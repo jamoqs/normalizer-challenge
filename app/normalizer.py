@@ -39,8 +39,8 @@ class FootballEventNormalizer:
     def process_teams(self, event):
         try:
             team_id = event['Team Id']
-            self.teams[team_id].setdefault('Team Id', team_id)
-            self.teams[team_id].setdefault('Team Name', event['Team Name'])
+            self.teams[team_id]['Team Id'] = team_id
+            self.teams[team_id]['Team Name'] = event['Team Name']
         except (TypeError, ValueError) as e:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
@@ -48,9 +48,9 @@ class FootballEventNormalizer:
         try:
             player_id = event['Player Id']
             team_id = event['Team Id']
-            self.players[player_id].setdefault('Player Id', player_id)
-            self.players[player_id].setdefault('Team Id', team_id)
-            self.players[player_id].setdefault('Player Name', event['Player Name'])
+            self.players[player_id]['Player Id'] = player_id
+            self.players[player_id]['Team Id'] = team_id
+            self.players[player_id]['Player Name'] = event['Player Name']
         except (TypeError, ValueError) as e:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
