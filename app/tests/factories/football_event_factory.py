@@ -4,6 +4,7 @@ from faker import Faker
 
 fake = Faker()
 
+
 class EventFactory(factory.Factory):
     class Meta:
         model = dict
@@ -18,10 +19,11 @@ class EventFactory(factory.Factory):
     goals_scored = fake.random_number(digits=2)
     minutes_played = fake.random_number(digits=2)
 
+
 class FootballEventNormalizeFactory(factory.Factory):
 
-    input_file = 'test_input.csv'
-    output_ext = 'jsonl'
+    input_file = "test_input.csv"
+    output_ext = "jsonl"
 
     @classmethod
     def _create(cls, model_class, *args, **kwargs):
