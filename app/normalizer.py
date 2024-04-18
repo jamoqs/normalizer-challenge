@@ -4,7 +4,15 @@ from collections import defaultdict
 
 
 class FootballEventNormalizer:
+    """Class for normalizing football event data and calculating player statistics."""
+
     def __init__(self, input="input.csv", output="output.jsonl"):
+        """Initialize the FootballEventNormalizer.
+
+        Args:
+            input (str): Path to the input CSV file.
+            output (str): Path to the output JSONL file.
+        """
         self.input = input
         self.output = output
         self.matches = defaultdict(lambda: defaultdict(str))
@@ -14,6 +22,8 @@ class FootballEventNormalizer:
         self.match_player_stats = defaultdict(lambda: defaultdict(int))
 
     def read_csv_file(self):
+        """Read the CSV file and return its contents as a list of dictionaries."""
+
         try:
             with open(self.input, "r") as file:
                 return list(csv.DictReader(file))
@@ -23,6 +33,7 @@ class FootballEventNormalizer:
             raise csv.Error(f"Error reading CSV file {self.input}: {str(e)}") from e
 
     def process_matches(self, event):
+        """Process the match data from the event."""
         try:
             match_id = int(event["match_id"])
             team_id = int(event["team_id"])
@@ -48,6 +59,7 @@ class FootballEventNormalizer:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
     def process_teams(self, event):
+        """Process the team data from the event."""
         try:
             team_id = int(event["team_id"])
             self.teams[team_id]["Team Id"] = team_id
@@ -56,6 +68,7 @@ class FootballEventNormalizer:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
     def process_players(self, event):
+        """Process the player data from the event."""
         try:
             player_id = int(event["player_id"])
             team_id = int(event["team_id"])
@@ -66,27 +79,45 @@ class FootballEventNormalizer:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
     def process_statistics(self, event):
+        """Process the statistics data from the event."""
         try:
             player_id = int(event["player_id"])
             goals_scored = int(event["goals_scored"])
+            match_id = int(event["match_id"])
             minutes_played = int(event["minutes_played"])
 
-            if player_id in self.match_player_stats:
-                self.match_player_stats[player_id] += goals_scored
+            player_match_stats_key = (player_id, match_id)
+            if player_match_stats_key in self.match_player_stats:
+                self.match_player_stats[player_match_stats_key][
+                    "Goals Scored"
+                ] += goals_scored
             else:
-                self.match_player_stats[player_id] = goals_scored
+                self.match_player_stats[player_match_stats_key] = {
+                    "Player Id": player_id,
+                    "Match Id": match_id,
+                    "Goals Scored": goals_scored,
+                    "Minutes Played": minutes_played,
+                }
 
-            fraction_minutes_played = minutes_played / 90
+            total_goals_scored = 0
+            for stat in self.match_player_stats.values():
+                if stat["Player Id"] == player_id:
+                    total_goals_scored += stat["Goals Scored"]
+
+            fraction_minutes_played = minutes_played / 90 if minutes_played > 0 else 0
             fraction_goals_scored = (
-                self.match_player_stats[player_id] / goals_scored
-                if goals_scored > 0
-                else 0
+                goals_scored / total_goals_scored if total_goals_scored > 0 else 0
             )
 
             statistic = {
                 "Player Id": player_id,
-                "Goals Scored": self.match_player_stats[player_id],
-                "Minutes Played": minutes_played,
+                "Match Id": match_id,
+                "Goals Scored": self.match_player_stats[player_match_stats_key][
+                    "Goals Scored"
+                ],
+                "Minutes Played": self.match_player_stats[player_match_stats_key][
+                    "Minutes Played"
+                ],
                 "Fraction of total minutes played": fraction_minutes_played,
                 "Fraction of total goals scored": fraction_goals_scored,
             }
@@ -107,6 +138,7 @@ class FootballEventNormalizer:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
     def transform_data(self):
+        """Transform the input data into processed statistics and update match goals."""
         try:
             input_data = self.read_csv_file()
             for event in input_data:
@@ -126,6 +158,12 @@ class FootballEventNormalizer:
             raise RuntimeError(f"An unexpected error occurred: {str(e)}") from e
 
     def save_to_json_lines(self, data, file_path):
+        """Save data to a JSON Lines file.
+
+        Args:
+            data (list): List of dictionaries to be saved.
+            file_path (str): Path to the output file.
+        """
         try:
             with open(file_path, "w") as file:
                 for item in data:
@@ -135,6 +173,7 @@ class FootballEventNormalizer:
             raise IOError(f"Error writing to file {file_path}: {str(e)}") from e
 
     def save_data(self):
+        """Save the processed data to JSONL files."""
         self.save_to_json_lines(list(self.matches.values()), f"match.{self.output}")
         self.save_to_json_lines(list(self.teams.values()), f"team.{self.output}")
         self.save_to_json_lines(list(self.players.values()), f"player.{self.output}")
