@@ -1,5 +1,6 @@
 import argparse
 from app.normalizer import FootballEventNormalizer
+import unittest
 
 
 def main():
@@ -16,8 +17,12 @@ def main():
     parser.add_argument("--test", action="store_true", help="Run tests")
     args = parser.parse_args()
 
-    processor = FootballEventNormalizer(args.input_file, args.output)
-    processor.run()
+    if args.test:
+        test_suite = unittest.TestLoader().discover("app/tests")
+        unittest.TextTestRunner().run(test_suite)
+    else:
+        processor = FootballEventNormalizer(args.input_file, args.output)
+        processor.run()
 
 
 if __name__ == "__main__":
