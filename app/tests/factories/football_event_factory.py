@@ -13,7 +13,7 @@ class EventFactory(factory.Factory):
     match_name = fake.name()
     team_id = factory.Sequence(lambda n: n)
     team_name = fake.name()
-    is_home = fake.boolean()
+    is_home = str(fake.boolean())
     player_id = factory.Sequence(lambda n: n)
     player_name = fake.name()
     goals_scored = fake.random_number(digits=2)
