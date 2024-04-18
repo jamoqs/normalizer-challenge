@@ -26,13 +26,16 @@ class FootballEventNormalizer:
         try:
             match_id = int(event["match_id"])
             team_id = int(event["team_id"])
+            
+            if match_id not in self.matches:
+                self.matches[match_id]["Match Id"] = match_id
+                self.matches[match_id]["Match Name"] = event["match_name"]
+                self.matches[match_id]["Home Goals"] = 0
+                self.matches[match_id]["Away Goals"] = 0
+
             match_data = self.matches[match_id]
-            match_data["Match Id"] = match_id
-            match_data["Match Name"] = event["match_name"]
-            match_data["Home Team Id"] = team_id if event['is_home'] else None
-            match_data["Away Team Id"] = team_id if not event['is_home'] else None
-            match_data["Home Goals"] = match_data.get("Home Goals", 0)
-            match_data["Away Goals"] = match_data.get("Away Goals", 0)
+            match_data["Home Team Id"] = team_id if event['is_home'] == 'True' else self.matches[match_id].get("Home Team Id", None)
+            match_data["Away Team Id"] = team_id if event['is_home'] == 'False' else self.matches[match_id].get("Away Team Id", None)
         except (TypeError, ValueError) as e:
             raise ValueError(f"Invalid data in event: {event}.") from e
 
@@ -56,27 +59,46 @@ class FootballEventNormalizer:
 
     def process_statistics(self, event):
         try:
-            match_id = int(event["match_id"])
             player_id = int(event["player_id"])
             goals_scored = int(event["goals_scored"])
             minutes_played = int(event["minutes_played"])
-            match_goals = self.match_player_stats[match_id][player_id] + goals_scored
-            self.match_player_stats[match_id][player_id] = match_goals
+
+            # Update existing statistics or create new statistics
+            if player_id in self.match_player_stats:
+                self.match_player_stats[player_id] += goals_scored
+            else:
+                self.match_player_stats[player_id] = goals_scored
+
             fraction_minutes_played = minutes_played / 90
-            fraction_goals_scored = goals_scored / match_goals if match_goals > 0 else 0
-            self.statistics.append(
-                {
-                    "Stat Id": len(self.statistics) + 1,
-                    "Player Id": player_id,
-                    "Match Id": match_id,
-                    "Goals Scored": goals_scored,
-                    "Minutes Played": minutes_played,
-                    "Fraction of total minutes played": fraction_minutes_played,
-                    "Fraction of total goals scored": fraction_goals_scored,
-                }
-            )
+            fraction_goals_scored = self.match_player_stats[player_id] / goals_scored if goals_scored > 0 else 0
+
+            # Create or update statistics
+            statistic = {
+                "Player Id": player_id,
+                "Goals Scored": self.match_player_stats[player_id],
+                "Minutes Played": minutes_played,
+                "Fraction of total minutes played": fraction_minutes_played,
+                "Fraction of total goals scored": fraction_goals_scored,
+            }
+
+            # Check if player already has a statistic
+            existing_statistic = None
+            for i in self.statistics:
+                if i["Player Id"] == player_id:
+                    existing_statistic = i
+                    break
+
+            if existing_statistic:
+                # Update existing statistic
+                existing_statistic.update(statistic)
+            else:
+                # Add new statistic
+                stat_id = len(self.statistics) + 1
+                statistic = {"Stat Id": stat_id, **statistic}
+                self.statistics.append(statistic)
         except (TypeError, ValueError) as e:
             raise ValueError(f"Invalid data in event: {event}.") from e
+
 
     def transform_data(self):
         try:
@@ -89,7 +111,7 @@ class FootballEventNormalizer:
 
                 goals_scored = int(event["goals_scored"])
                 match_id = int(event["match_id"])
-                if event['is_home']:
+                if event['is_home'] == 'True':
                     self.matches[match_id]["Home Goals"] += goals_scored
                 else:
                     self.matches[match_id]["Away Goals"] += goals_scored
